@@ -44,12 +44,22 @@ io.on('connection', async (socket) => {
 
   console.log(`User ${username} has connected.`)
 
-  socket.emit("user connected", { name: username })
+  socket.emit('user data', { id: socket.id, name: username })
+  socket.broadcast.emit("user connected", { name: username })
 
   socket.on("disconnect", async () => {
-    const row = await db.get(`SELECT name FROM users WHERE id = ?`, [socket.id]);
-    console.log(`User ${row.name} has disconnected.`)
-    // delete user in db
-    io.emit('user disconnected', { name: row.name });
+    try {
+      const row = await db.get(`SELECT * FROM users WHERE id = ?`, [socket.id]);
+      console.log(`User ${row.name} has disconnected.`)
+      await db.exec(`DELETE FROM users WHERE id = '${socket.id}'`)
+      io.emit('user disconnected', { name: row.name });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Error:', error.message);
+      } else {
+        console.error('Unknown error:', error);
+      }
+    }
+
   })
 })
