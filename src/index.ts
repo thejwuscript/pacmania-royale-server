@@ -1,4 +1,5 @@
-import express, { Express, Request, Response } from "express";
+import { existsSync, unlinkSync } from 'fs';
+import express from "express";
 import dotenv from "dotenv";
 import { Server } from 'socket.io';
 import sqlite3 from "sqlite3";
@@ -7,18 +8,29 @@ import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generato
 
 dotenv.config();
 
-const app: Express = express();
-
+const app = express();
 const port = 3001
+
 const server = app.listen(port, () => {
   console.log("listening on port:" + port)
 })
+
 const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ['GET', 'POST'],
   }
 })
+
+if (process.env.NODE_ENV === "development" && existsSync("database.db")) {
+  try {
+    unlinkSync("database.db");
+    console.log('Database file deleted successfully');
+  } catch (error) {
+    console.error('Error deleting database file:', error);
+  }
+
+}
 
 const db = await open({
   filename: 'database.db',
