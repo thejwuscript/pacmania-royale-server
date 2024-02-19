@@ -63,6 +63,10 @@ io.on('connection', async (socket) => {
   socket.broadcast.emit("user connected", { name: username })
   io.emit("connected users", Array.from(connectedUsers.values()))
 
+  socket.on("new chat message", message => {
+    io.emit("chat messages", message)
+  })
+
   socket.on("disconnect", async () => {
     try {
       // const row = await db.get(`SELECT * FROM users WHERE id = ?`, [socket.id]);
