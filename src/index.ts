@@ -63,8 +63,8 @@ io.on('connection', async (socket) => {
   socket.broadcast.emit("connected", { name: username })
   io.emit("update user list", Array.from(connectedUsers.values()))
 
-  socket.on("new chat message", message => {
-    io.emit("chat messages", message)
+  socket.on("new chat message", (message, username) => {
+    io.emit("chat messages", message, username)
   })
 
   socket.on("disconnect", async () => {
