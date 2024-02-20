@@ -59,9 +59,9 @@ io.on('connection', async (socket) => {
 
   console.log(`User ${username} has connected.`)
 
-  socket.emit('my user data', { id: socket.id, name: username })
-  socket.broadcast.emit("user connected", { name: username })
-  io.emit("connected users", Array.from(connectedUsers.values()))
+  socket.emit('current user data', { id: socket.id, name: username })
+  socket.broadcast.emit("connected", { name: username })
+  io.emit("update user list", Array.from(connectedUsers.values()))
 
   socket.on("new chat message", message => {
     io.emit("chat messages", message)
@@ -74,8 +74,8 @@ io.on('connection', async (socket) => {
       console.log(`User ${disconnectedUser.name} has disconnected.`)
       // await db.exec(`DELETE FROM users WHERE id = '${socket.id}'`)
       connectedUsers.delete(socket.id)
-      io.emit('user disconnected', { name: disconnectedUser.name });
-      io.emit("connected users", Array.from(connectedUsers.values()))
+      io.emit('disconnected', { name: disconnectedUser.name });
+      io.emit("update user list", Array.from(connectedUsers.values()))
     } catch (error) {
       if (error instanceof Error) {
         console.error('Error:', error.message);
