@@ -60,7 +60,7 @@ io.on('connection', async (socket) => {
   console.log(`User ${username} has connected.`)
 
   socket.emit('current user data', { id: socket.id, name: username })
-  socket.broadcast.emit("connected", { name: username })
+  io.emit("connected", { name: username })
   io.emit("update user list", Array.from(connectedUsers.values()))
 
   socket.on("new chat message", (message, username) => {
