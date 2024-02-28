@@ -56,6 +56,13 @@ io.on('connection', async (socket) => {
       }
     }
   })
+
+  socket.on("join gameroom", (gameroomId) => {
+    socket.join(`${gameroomId}`)
+
+    const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
+    console.log(clientsInRoom)
+  })
 })
 
 app.post("/gameroom", (req, res) => {
