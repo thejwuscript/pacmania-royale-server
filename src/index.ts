@@ -3,11 +3,13 @@ import dotenv from "dotenv";
 import { Server } from 'socket.io';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 import { v4 as uuidv4 } from 'uuid';
+import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
-const port = 3001
+const port = 3001;
+app.use(cors())
 
 const server = app.listen(port, () => {
   console.log("listening on port:" + port)
@@ -55,6 +57,11 @@ io.on('connection', async (socket) => {
         console.error('Unknown error:', error);
       }
     }
+  })
+
+  socket.on("join lobby", () => {
+    socket.emit('current user data', { id: socket.id, name: username })
+    io.emit("update user list", Array.from(connectedUsers.values()))
   })
 
   socket.on("join gameroom", (gameroomId) => {
