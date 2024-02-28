@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { Server } from 'socket.io';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ const io = new Server(server, {
 })
 
 let connectedUsers = new Map();
+let gamerooms = new Map();
 
 io.on('connection', async (socket) => {
   const username = uniqueNamesGenerator({
@@ -54,4 +56,9 @@ io.on('connection', async (socket) => {
       }
     }
   })
+})
+
+app.post("/gameroom", (req, res) => {
+  const newRoomId = uuidv4();
+  res.json({id: newRoomId})
 })
