@@ -4,12 +4,14 @@ import { Server } from 'socket.io';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 import { v4 as uuidv4 } from 'uuid';
 import cors from 'cors';
+import bodyParser from 'body-parser';
 
 dotenv.config();
 
 const app = express();
 const port = 3001;
-app.use(cors())
+app.use(cors());
+app.use(bodyParser.json());
 
 const server = app.listen(port, () => {
   console.log("listening on port:" + port)
@@ -64,7 +66,7 @@ io.on('connection', async (socket) => {
     io.emit("update user list", Array.from(connectedUsers.values()))
   })
 
-  socket.on("join gameroom", (gameroomId) => {
+  socket.on("join gameroom", (gameroomId: string, maxPlayerCount: number) => {
     socket.join(`${gameroomId}`)
 
     const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
@@ -79,5 +81,13 @@ io.on('connection', async (socket) => {
 
 app.post("/gameroom", (req, res) => {
   const newRoomId = uuidv4();
-  res.json({ id: newRoomId })
+  let maxPlayerCount = 1
+  if (req.body.maxPlayerCount) {
+    maxPlayerCount = req.body.maxPlayerCount
+  }
+  gamerooms.set(newRoomId, {
+    id: newRoomId,
+    maxPlayerCount
+  })
+  res.json({ id: newRoomId, maxPlayerCount })
 })
