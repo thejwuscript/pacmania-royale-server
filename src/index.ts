@@ -68,11 +68,16 @@ io.on('connection', async (socket) => {
     socket.join(`${gameroomId}`)
 
     const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
-    console.log(clientsInRoom)
+    console.log(clientsInRoom) // a Set of socket id's
+    // from socket ids to a list of names
+    const usernames: string[] = []
+    clientsInRoom?.forEach(clientId => usernames.push(connectedUsers.get(clientId)))
+    // emit from gameroom
+    io.to(gameroomId).emit("players joined", usernames)
   })
 })
 
 app.post("/gameroom", (req, res) => {
   const newRoomId = uuidv4();
-  res.json({id: newRoomId})
+  res.json({ id: newRoomId })
 })
