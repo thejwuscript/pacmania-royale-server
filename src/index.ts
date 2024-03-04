@@ -25,6 +25,7 @@ const io = new Server(server, {
 })
 
 let connectedUsers = new Map();
+let nextGameroomId = 1;
 let gamerooms = new Map();
 
 io.on('connection', async (socket) => {
@@ -67,7 +68,7 @@ io.on('connection', async (socket) => {
   })
 
   socket.on("join gameroom", (gameroomId: string, maxPlayerCount: number) => {
-    socket.join(`${gameroomId}`)
+    socket.join(`${gameroomId}`) //TODO: need to leave
 
     const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
     console.log(clientsInRoom) // a Set of socket id's
@@ -76,11 +77,14 @@ io.on('connection', async (socket) => {
     clientsInRoom?.forEach(clientId => usernames.push(connectedUsers.get(clientId)))
     // emit from gameroom
     io.to(gameroomId).emit("players joined", usernames)
+    if (clientsInRoom) {
+      io.emit("gameroom player count", gameroomId, clientsInRoom.size)
+    }
   })
 })
 
 app.post("/gameroom", (req, res) => {
-  const newRoomId = uuidv4();
+  const newRoomId = nextGameroomId++;
   let maxPlayerCount = 1
   if (req.body.maxPlayerCount) {
     maxPlayerCount = req.body.maxPlayerCount
@@ -89,5 +93,6 @@ app.post("/gameroom", (req, res) => {
     id: newRoomId,
     maxPlayerCount
   })
+  io.emit("gameroom created", newRoomId, maxPlayerCount)
   res.json({ id: newRoomId, maxPlayerCount })
 })
