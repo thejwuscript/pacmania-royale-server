@@ -6,6 +6,12 @@ import { v4 as uuidv4 } from "uuid";
 import cors from "cors";
 import bodyParser from "body-parser";
 
+interface Gameroom {
+  id: string;
+  maxPlayerCount: number;
+  host: string;
+}
+
 dotenv.config();
 
 const app = express();
@@ -26,7 +32,7 @@ const io = new Server(server, {
 
 let connectedUsers = new Map();
 let nextGameroomId = 1;
-let gamerooms = new Map();
+let gamerooms: { [key: string]: Gameroom } = {};
 
 io.on("connection", async (socket) => {
   const username = uniqueNamesGenerator({
@@ -82,26 +88,34 @@ io.on("connection", async (socket) => {
 
   socket.on("leave gameroom", (gameroomId: string) => {
     socket.leave(`${gameroomId}`);
+
+    if (gamerooms[gameroomId].host === socket.id) {
+      io.to(gameroomId).emit("host left");
+      io.socketsLeave(gameroomId);
+      return;
+    }
     // emit to gameroom
     // TODO: possible refactoring here
     const usernames: string[] = [];
     io.sockets.adapter.rooms.get(gameroomId)?.forEach((clientId) => usernames.push(connectedUsers.get(clientId)));
     io.to(gameroomId).emit("players left", usernames);
     // emit to lobby
-    io.emit("gameroom player count", gameroomId, usernames.length)
+    io.emit("gameroom player count", gameroomId, usernames.length);
   });
 });
 
 app.post("/gameroom", (req, res) => {
-  const newRoomId = nextGameroomId++;
+  const newRoomId = nextGameroomId.toString();
+  nextGameroomId += 1;
   let maxPlayerCount = 1;
   if (req.body.maxPlayerCount) {
     maxPlayerCount = req.body.maxPlayerCount;
   }
-  gamerooms.set(newRoomId, {
+  gamerooms[newRoomId] = {
     id: newRoomId,
     maxPlayerCount,
-  });
+    host: req.body.socketId,
+  };
   io.emit("gameroom created", newRoomId, maxPlayerCount);
   res.json({ id: newRoomId, maxPlayerCount });
 });
