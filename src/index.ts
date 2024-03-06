@@ -73,7 +73,12 @@ io.on("connection", async (socket) => {
     io.emit("update user list", Array.from(connectedUsers.values()));
   });
 
-  socket.on("join gameroom", (gameroomId: string, maxPlayerCount: number) => {
+  socket.on("join gameroom", (gameroomId: string, maxPlayerCount: number, callback) => {
+    if (!gamerooms[gameroomId]) {
+      callback({ status: 404, error: "resource not found", message: "Game room does not exist" });
+      return;
+    }
+
     socket.join(`${gameroomId}`); //TODO: need to leave
 
     const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
@@ -87,20 +92,20 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("leave gameroom", (gameroomId: string) => {
-    socket.leave(`${gameroomId}`);
+    if (!gamerooms[gameroomId]) return;
 
     if (gamerooms[gameroomId].host === socket.id) {
       io.to(gameroomId).emit("host left");
       io.socketsLeave(gameroomId);
       return;
+    } else {
+      // TODO: Refactor
+      socket.leave(`${gameroomId}`);
+      const usernames: string[] = [];
+      io.sockets.adapter.rooms.get(gameroomId)?.forEach((clientId) => usernames.push(connectedUsers.get(clientId)));
+      io.to(gameroomId).emit("players left", usernames);
+      io.emit("gameroom player count", gameroomId, usernames.length);
     }
-    // emit to gameroom
-    // TODO: possible refactoring here
-    const usernames: string[] = [];
-    io.sockets.adapter.rooms.get(gameroomId)?.forEach((clientId) => usernames.push(connectedUsers.get(clientId)));
-    io.to(gameroomId).emit("players left", usernames);
-    // emit to lobby
-    io.emit("gameroom player count", gameroomId, usernames.length);
   });
 });
 
