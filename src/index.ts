@@ -97,13 +97,15 @@ io.on("connection", async (socket) => {
     if (gamerooms[gameroomId].host === socket.id) {
       io.to(gameroomId).emit("host left");
       io.socketsLeave(gameroomId);
+      delete gamerooms[gameroomId];
+      io.emit("gameroom deleted", gameroomId);
       return;
     } else {
       // TODO: Refactor
       socket.leave(`${gameroomId}`);
       const usernames: string[] = [];
       io.sockets.adapter.rooms.get(gameroomId)?.forEach((clientId) => usernames.push(connectedUsers.get(clientId)));
-      io.to(gameroomId).emit("players left", usernames);
+      io.to(gameroomId).emit("player left", connectedUsers.get(socket.id)?.name);
       io.emit("gameroom player count", gameroomId, usernames.length);
     }
   });
