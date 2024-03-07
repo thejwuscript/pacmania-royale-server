@@ -126,3 +126,14 @@ app.post("/gameroom", (req, res) => {
   io.emit("gameroom created", newRoomId, maxPlayerCount);
   res.json({ id: newRoomId, maxPlayerCount });
 });
+
+app.get("/gamerooms", (req, res) => {
+  const gameroomAry = Object.values(gamerooms).map((gameroom) => {
+    return {
+      id: gameroom.id,
+      maxPlayerCount: gameroom.maxPlayerCount,
+      currentPlayerCount: io.sockets.adapter.rooms.get(gameroom.id)?.size ?? 0,
+    };
+  });
+  res.json(gameroomAry);
+});
