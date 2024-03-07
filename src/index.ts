@@ -75,7 +75,7 @@ io.on("connection", async (socket) => {
 
   socket.on("join gameroom", (gameroomId: string, maxPlayerCount: number, callback) => {
     if (!gamerooms[gameroomId]) {
-      callback({ status: 404, error: "resource not found", message: "Game room does not exist" });
+      callback({ status: 404, error: "resource not found", message: "The game room does not exist" });
       return;
     }
 
