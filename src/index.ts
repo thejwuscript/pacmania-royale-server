@@ -73,20 +73,23 @@ io.on("connection", async (socket) => {
     io.emit("update user list", Array.from(connectedUsers.values()));
   });
 
-  socket.on("join gameroom", (gameroomId: string, maxPlayerCount: number, callback) => {
+  socket.on("join gameroom", (gameroomId: string, callback) => {
+    console.log(callback)
     if (!gamerooms[gameroomId]) {
-      callback({ status: 404, error: "resource not found", message: "The game room does not exist" });
+      callback({ message: "The game room does not exist" });
+      return;
+    }
+    // before joining, check whether the room is full already
+    let clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
+    if (clientsInRoom?.size ?? 0 >= gamerooms[gameroomId].maxPlayerCount) {
+      callback({ message: "The game room is full." });
       return;
     }
 
-    socket.join(`${gameroomId}`); //TODO: need to leave
-
-    const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
-    console.log(clientsInRoom); // a Set of socket id's
-    // from socket ids to a list of names
+    socket.join(`${gameroomId}`);
+    clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
     const usernames: string[] = [];
     clientsInRoom?.forEach((clientId) => usernames.push(connectedUsers.get(clientId)));
-    // emit from gameroom
     io.to(gameroomId).emit("players joined", usernames);
     io.emit("gameroom player count", gameroomId, usernames.length);
   });
