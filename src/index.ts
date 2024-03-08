@@ -12,6 +12,18 @@ interface Gameroom {
   host: string;
 }
 
+interface User {
+  id: string;
+  name: string;
+}
+
+interface Player extends User {
+  position: {
+    x: number;
+    y: number;
+  };
+}
+
 dotenv.config();
 
 const app = express();
@@ -30,7 +42,7 @@ const io = new Server(server, {
   },
 });
 
-let connectedUsers = new Map();
+let connectedUsers = new Map<string, User>();
 let nextGameroomId = 1;
 let gamerooms: { [key: string]: Gameroom } = {};
 
@@ -40,7 +52,7 @@ io.on("connection", async (socket) => {
     length: 2,
   });
 
-  connectedUsers.set(socket.id, { name: username });
+  connectedUsers.set(socket.id, { id: socket.id, name: username });
 
   console.log(`User ${username} has connected.`);
 
@@ -55,10 +67,12 @@ io.on("connection", async (socket) => {
   socket.on("disconnect", async () => {
     try {
       const disconnectedUser = connectedUsers.get(socket.id);
-      console.log(`User ${disconnectedUser.name} has disconnected.`);
-      connectedUsers.delete(socket.id);
-      io.emit("disconnected", { name: disconnectedUser.name });
-      io.emit("update user list", Array.from(connectedUsers.values()));
+      if (disconnectedUser) {
+        console.log(`User ${disconnectedUser.name} has disconnected.`);
+        connectedUsers.delete(socket.id);
+        io.emit("disconnected", { name: disconnectedUser.name });
+        io.emit("update user list", Array.from(connectedUsers.values()));
+      }
     } catch (error) {
       if (error instanceof Error) {
         console.error("Error:", error.message);
@@ -74,24 +88,26 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("join gameroom", (gameroomId: string, callback) => {
-    console.log(callback)
     if (!gamerooms[gameroomId]) {
       callback({ message: "The game room does not exist" });
       return;
     }
     // before joining, check whether the room is full already
-    let clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
-    if (clientsInRoom?.size ?? 0 >= gamerooms[gameroomId].maxPlayerCount) {
+    const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
+    const clientCount = clientsInRoom ? clientsInRoom.size : 0;
+    console.log(clientCount, gamerooms[gameroomId].maxPlayerCount);
+    if (clientsInRoom && !clientsInRoom.has(socket.id) && clientCount >= gamerooms[gameroomId].maxPlayerCount) {
       callback({ message: "The game room is full." });
       return;
     }
 
     socket.join(`${gameroomId}`);
-    clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
-    const usernames: string[] = [];
-    clientsInRoom?.forEach((clientId) => usernames.push(connectedUsers.get(clientId)));
-    io.to(gameroomId).emit("players joined", usernames);
-    io.emit("gameroom player count", gameroomId, usernames.length);
+
+    if (clientsInRoom) {
+      const users = Array.from(clientsInRoom).map((clientId) => connectedUsers.get(clientId));
+      io.to(gameroomId).emit("players joined", users);
+      io.emit("gameroom player count", gameroomId, users.length);
+    }
   });
 
   socket.on("leave gameroom", (gameroomId: string) => {
@@ -106,11 +122,15 @@ io.on("connection", async (socket) => {
     } else {
       // TODO: Refactor
       socket.leave(`${gameroomId}`);
-      const usernames: string[] = [];
-      io.sockets.adapter.rooms.get(gameroomId)?.forEach((clientId) => usernames.push(connectedUsers.get(clientId)));
+      const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
       io.to(gameroomId).emit("player left", connectedUsers.get(socket.id)?.name);
-      io.emit("gameroom player count", gameroomId, usernames.length);
+      const count = clientsInRoom?.size ?? 0;
+      io.emit("gameroom player count", gameroomId, count);
     }
+  });
+
+  socket.on("game start", (gameroomId: string) => {
+    // in the gameroom, the players, assign starting positions and orientation.
   });
 });
 
