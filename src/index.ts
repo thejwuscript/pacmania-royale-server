@@ -133,17 +133,19 @@ io.on("connection", async (socket) => {
     io.to(gameroomId).emit("start game");
   });
 
-  socket.on("get initial positions", (gameroomId: string) => {
+  socket.on("get initial positions", (gameroomId: string, callback) => {
     const bottomLeftPosition = { position: { x: 100, y: 450 }, orientation: "right" };
     const topRightPosition = { position: { x: 700, y: 150 }, orientation: "left" };
     const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
+
     if (clientsInRoom) {
-      const playerOneId = Array.from(clientsInRoom)[0];
-      const playerTwoId = Array.from(clientsInRoom)[1];
+      const sortedClientsAry = Array.from(clientsInRoom).sort();
+      const playerOneId = sortedClientsAry[0];
+      const playerTwoId = sortedClientsAry[1];
       const playerOne = { id: playerOneId, name: connectedUsers.get(playerOneId)?.name, ...bottomLeftPosition };
       const playerTwo = { id: playerOneId, name: connectedUsers.get(playerTwoId)?.name, ...topRightPosition };
       const players = { [playerOneId]: playerOne, [playerTwoId]: playerTwo };
-      io.to(gameroomId).emit("assigned initial positions", players);
+      callback(players);
     }
   });
 });
