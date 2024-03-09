@@ -95,7 +95,7 @@ io.on("connection", async (socket) => {
     // before joining, check whether the room is full already
     const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
     const clientCount = clientsInRoom ? clientsInRoom.size : 0;
-    console.log(clientCount, gamerooms[gameroomId].maxPlayerCount);
+
     if (clientsInRoom && !clientsInRoom.has(socket.id) && clientCount >= gamerooms[gameroomId].maxPlayerCount) {
       callback({ message: "The game room is full." });
       return;
@@ -130,7 +130,21 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("game start", (gameroomId: string) => {
-    // in the gameroom, the players, assign starting positions and orientation.
+    io.to(gameroomId).emit("start game");
+  });
+
+  socket.on("get initial positions", (gameroomId: string) => {
+    const bottomLeftPosition = { position: { x: 100, y: 450 }, orientation: "right" };
+    const topRightPosition = { position: { x: 700, y: 150 }, orientation: "left" };
+    const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
+    if (clientsInRoom) {
+      const playerOneId = Array.from(clientsInRoom)[0];
+      const playerTwoId = Array.from(clientsInRoom)[1];
+      const playerOne = { id: playerOneId, name: connectedUsers.get(playerOneId)?.name, ...bottomLeftPosition };
+      const playerTwo = { id: playerOneId, name: connectedUsers.get(playerTwoId)?.name, ...topRightPosition };
+      const players = { [playerOneId]: playerOne, [playerTwoId]: playerTwo };
+      io.to(gameroomId).emit("assigned initial positions", players);
+    }
   });
 });
 
