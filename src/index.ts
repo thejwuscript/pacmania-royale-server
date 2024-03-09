@@ -45,6 +45,7 @@ const io = new Server(server, {
 let connectedUsers = new Map<string, User>();
 let nextGameroomId = 1;
 let gamerooms: { [key: string]: Gameroom } = {};
+let allPlayers = new Map<string, Player>();
 
 io.on("connection", async (socket) => {
   const username = uniqueNamesGenerator({
@@ -142,10 +143,20 @@ io.on("connection", async (socket) => {
       const sortedClientsAry = Array.from(clientsInRoom).sort();
       const playerOneId = sortedClientsAry[0];
       const playerTwoId = sortedClientsAry[1];
-      const playerOne = { id: playerOneId, name: connectedUsers.get(playerOneId)?.name, ...bottomLeftPosition };
-      const playerTwo = { id: playerOneId, name: connectedUsers.get(playerTwoId)?.name, ...topRightPosition };
+      const playerOne = { id: playerOneId, name: connectedUsers.get(playerOneId)?.name ?? "", ...bottomLeftPosition };
+      const playerTwo = { id: playerTwoId, name: connectedUsers.get(playerTwoId)?.name ?? "", ...topRightPosition };
       const players = { [playerOneId]: playerOne, [playerTwoId]: playerTwo };
+      allPlayers.set(playerOneId, playerOne);
+      allPlayers.set(playerTwoId, playerTwo);
       callback(players);
+    }
+  });
+
+  socket.on("player movement", (gameroomId, socketId, position) => {
+    const player = allPlayers.get(socketId);
+    if (player && player.position) {
+      player.position = position;
+      socket.to(gameroomId).emit("player moved", player);
     }
   });
 });
