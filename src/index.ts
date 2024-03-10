@@ -135,8 +135,8 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("get initial positions", (gameroomId: string, callback) => {
-    const bottomLeftPosition = { position: { x: 100, y: 450 }, orientation: "right" };
-    const topRightPosition = { position: { x: 700, y: 150 }, orientation: "left" };
+    const bottomLeftPosition = { position: { x: 100, y: 300 }, orientation: "right" };
+    const topRightPosition = { position: { x: 500, y: 100 }, orientation: "left" };
     const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
 
     if (clientsInRoom) {
