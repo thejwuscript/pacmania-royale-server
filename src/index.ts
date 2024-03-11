@@ -137,11 +137,13 @@ io.on("connection", async (socket) => {
       io.to(gameroomId).emit("host left");
       io.socketsLeave(gameroomId);
       delete gamerooms[gameroomId];
+      allPlayers.delete(socket.id);
       io.emit("gameroom deleted", gameroomId);
       return;
     } else {
       // TODO: Refactor
       socket.leave(`${gameroomId}`);
+      allPlayers.delete(socket.id);
       const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
       io.to(gameroomId).emit("player left", connectedUsers.get(socket.id)?.name);
       const count = clientsInRoom?.size ?? 0;
