@@ -125,8 +125,7 @@ io.on("connection", async (socket) => {
         }
       });
 
-      // TODO: include who is host
-      io.to(gameroomId).emit("players joined", players);
+      io.to(gameroomId).emit("players joined", players, gamerooms[gameroomId].host);
       io.emit("gameroom player count", gameroomId, players.length);
     }
   });
