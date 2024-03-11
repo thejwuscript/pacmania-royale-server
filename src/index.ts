@@ -194,7 +194,7 @@ io.on("connection", async (socket) => {
 
   socket.on("player defeat", (gameroomId: string, socketId: string) => {
     console.log("player defeated", socketId, "in gameroom", gameroomId);
-    socket.to(gameroomId).emit("player defeated", socketId);
+    io.to(gameroomId).emit("player defeated", socketId);
   });
 });
 
