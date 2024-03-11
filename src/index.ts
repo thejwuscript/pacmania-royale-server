@@ -159,6 +159,11 @@ io.on("connection", async (socket) => {
       socket.to(gameroomId).emit("player moved", player);
     }
   });
+
+  socket.on("player defeat", (gameroomId: string, socketId: string) => {
+    console.log("player defeated", socketId, "in gameroom", gameroomId)
+    socket.to(gameroomId).emit("player defeated", socketId);
+  })
 });
 
 app.post("/gameroom", (req, res) => {
