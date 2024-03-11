@@ -21,7 +21,9 @@ interface Player extends User {
   position: {
     x: number;
     y: number;
-  };
+  } | null;
+  color: string;
+  gameroom: string;
 }
 
 dotenv.config();
@@ -46,6 +48,7 @@ let connectedUsers = new Map<string, User>();
 let nextGameroomId = 1;
 let gamerooms: { [key: string]: Gameroom } = {};
 let allPlayers = new Map<string, Player>();
+const PACMAN_COLORS = ["0x15f5ba", "0xfc6736"];
 
 io.on("connection", async (socket) => {
   const username = uniqueNamesGenerator({
@@ -101,13 +104,30 @@ io.on("connection", async (socket) => {
       callback({ message: "The game room is full." });
       return;
     }
+    const currentUser = connectedUsers.get(socket.id);
+
+    if (currentUser && !allPlayers.get(socket.id)) {
+      const assignedColors = new Set();
+      clientsInRoom?.forEach((clientId) => assignedColors.add(allPlayers.get(clientId)!.color));
+      const color = PACMAN_COLORS.find((color) => !assignedColors.has(color)) ?? "";
+      allPlayers.set(socket.id, { ...currentUser, position: null, color, gameroom: gameroomId });
+    }
 
     socket.join(`${gameroomId}`);
 
     if (clientsInRoom) {
-      const users = Array.from(clientsInRoom).map((clientId) => connectedUsers.get(clientId));
-      io.to(gameroomId).emit("players joined", users);
-      io.emit("gameroom player count", gameroomId, users.length);
+      const players: Player[] = [];
+
+      Array.from(clientsInRoom).forEach((clientId) => {
+        const player = allPlayers.get(clientId);
+        if (player) {
+          players.push(player);
+        }
+      });
+
+      // TODO: include who is host
+      io.to(gameroomId).emit("players joined", players);
+      io.emit("gameroom player count", gameroomId, players.length);
     }
   });
 
@@ -143,11 +163,18 @@ io.on("connection", async (socket) => {
       const sortedClientsAry = Array.from(clientsInRoom).sort();
       const playerOneId = sortedClientsAry[0];
       const playerTwoId = sortedClientsAry[1];
-      const playerOne = { id: playerOneId, name: connectedUsers.get(playerOneId)?.name ?? "", ...bottomLeftPosition };
-      const playerTwo = { id: playerTwoId, name: connectedUsers.get(playerTwoId)?.name ?? "", ...topRightPosition };
+      let playerOne = allPlayers.get(playerOneId);
+      let playerTwo = allPlayers.get(playerTwoId);
+      if (playerOne) {
+        playerOne = Object.assign(playerOne, bottomLeftPosition);
+        allPlayers.set(playerOneId, playerOne);
+      }
+      if (playerTwo) {
+        playerTwo = Object.assign(playerTwo, topRightPosition);
+        allPlayers.set(playerTwoId, playerTwo);
+      }
+
       const players = { [playerOneId]: playerOne, [playerTwoId]: playerTwo };
-      allPlayers.set(playerOneId, playerOne);
-      allPlayers.set(playerTwoId, playerTwo);
       callback(players);
     }
   });
@@ -161,9 +188,9 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("player defeat", (gameroomId: string, socketId: string) => {
-    console.log("player defeated", socketId, "in gameroom", gameroomId)
+    console.log("player defeated", socketId, "in gameroom", gameroomId);
     socket.to(gameroomId).emit("player defeated", socketId);
-  })
+  });
 });
 
 app.post("/gameroom", (req, res) => {
