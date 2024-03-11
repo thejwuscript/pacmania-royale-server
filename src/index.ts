@@ -48,7 +48,11 @@ let connectedUsers = new Map<string, User>();
 let nextGameroomId = 1;
 let gamerooms: { [key: string]: Gameroom } = {};
 let allPlayers = new Map<string, Player>();
-const PACMAN_COLORS = ["0x15f5ba", "0xfc6736"];
+const PACMAN_COLORS = {
+  DEFAULT: "0xffff00",
+  TEAL: "0x15f5ba",
+  ORANGE: "0xfc6736",
+};
 
 io.on("connection", async (socket) => {
   const username = uniqueNamesGenerator({
@@ -109,7 +113,7 @@ io.on("connection", async (socket) => {
     if (currentUser && !allPlayers.get(socket.id)) {
       const assignedColors = new Set();
       clientsInRoom?.forEach((clientId) => assignedColors.add(allPlayers.get(clientId)!.color));
-      const color = PACMAN_COLORS.find((color) => !assignedColors.has(color)) ?? "";
+      const color = Object.values(PACMAN_COLORS).find((color) => !assignedColors.has(color)) ?? "";
       allPlayers.set(socket.id, { ...currentUser, position: null, color, gameroom: gameroomId });
     }
 
