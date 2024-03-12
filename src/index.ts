@@ -10,6 +10,7 @@ interface Gameroom {
   id: string;
   maxPlayerCount: number;
   host: string;
+  fruitPlaced?: boolean;
 }
 
 interface User {
@@ -196,6 +197,21 @@ io.on("connection", async (socket) => {
     console.log("player", winnerId, "defated", defeatedId, "in gameroom", gameroomId);
     io.to(gameroomId).emit("player defeated", winnerId, defeatedId);
   });
+
+  socket.on("fruit timer", (duration: number, gameroomId: string) => {
+    const x = getRandomNumber(50, 550);
+    const y = getRandomNumber(50, 350);
+    setTimeout(() => {
+      if (gamerooms[gameroomId].fruitPlaced) return;
+
+      io.to(gameroomId).emit("fruit location", x, y);
+      gamerooms[gameroomId].fruitPlaced = true;
+    }, duration);
+  });
+
+  socket.on("reset fruit", (gameroomId: string) => {
+    gamerooms[gameroomId].fruitPlaced = false;
+  })
 });
 
 app.post("/gameroom", (req, res) => {
@@ -224,3 +240,7 @@ app.get("/gamerooms", (req, res) => {
   });
   res.json(gameroomAry);
 });
+
+function getRandomNumber(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
