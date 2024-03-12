@@ -192,9 +192,9 @@ io.on("connection", async (socket) => {
     }
   });
 
-  socket.on("player defeat", (gameroomId: string, socketId: string) => {
-    console.log("player defeated", socketId, "in gameroom", gameroomId);
-    io.to(gameroomId).emit("player defeated", socketId);
+  socket.on("player defeat", (gameroomId: string, winnerId: string, defeatedId: string) => {
+    console.log("player", winnerId, "defated", defeatedId, "in gameroom", gameroomId);
+    io.to(gameroomId).emit("player defeated", winnerId, defeatedId);
   });
 });
 
