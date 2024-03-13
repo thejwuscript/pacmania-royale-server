@@ -49,6 +49,7 @@ const io = new Server(server, {
   },
 });
 
+const MAX_ROUNDS = 3;
 let connectedUsers = new Map<string, User>();
 let nextGameroomId = 1;
 let gamerooms: { [key: string]: Gameroom } = {};
@@ -259,7 +260,12 @@ io.on("connection", async (socket) => {
           players.push(player);
         }
       });
-      io.to(gameroomId).emit("go to next round", roundCount, players, gameroomId);
+      if ((roundCount > 2 && hasPlayerWithScoreGreaterThan1(players)) || roundCount > MAX_ROUNDS) {
+        const winnerId = getPlayerIdWithHighestScore(players);
+        io.to(gameroomId).emit("game over", winnerId);
+      } else {
+        io.to(gameroomId).emit("go to next round", roundCount, players, gameroomId);
+      }
     }
   });
 });
@@ -295,4 +301,16 @@ app.get("/gamerooms", (req, res) => {
 
 function getRandomNumber(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function getPlayerIdWithHighestScore(players: Player[]): string {
+  if (players.length === 0) {
+    throw new Error("No players provided");
+  }
+
+  return players.reduce((prev, current) => (prev.score > current.score ? prev : current)).id;
+}
+
+function hasPlayerWithScoreGreaterThan1(players: Player[]): boolean {
+  return players.some((player) => player.score > 1);
 }
