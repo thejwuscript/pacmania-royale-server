@@ -11,6 +11,8 @@ interface Gameroom {
   maxPlayerCount: number;
   host: string;
   fruitPlaced?: boolean;
+  winners: boolean[];
+  roundCount: number;
 }
 
 interface User {
@@ -24,8 +26,8 @@ interface Player extends User {
     y: number;
   } | null;
   color: string;
-  gameroom: string;
   score: number;
+  gameroom: string; // reference to Gameroom
 }
 
 dotenv.config();
@@ -212,11 +214,25 @@ io.on("connection", async (socket) => {
 
   socket.on("reset fruit", (gameroomId: string) => {
     gamerooms[gameroomId].fruitPlaced = false;
-  })
+  });
 
   socket.on("win round", (winnerId: string, gameroomId: string) => {
     // code here
-  })
+  });
+
+  socket.on("update round count", (gameroomId: string) => {
+    if (gamerooms[gameroomId].host === socket.id) {
+      const roundCount = ++gamerooms[gameroomId].roundCount;
+      const players: Player[] = [];
+      io.sockets.adapter.rooms.get(gameroomId)?.forEach((clientId) => {
+        const player = allPlayers.get(clientId);
+        if (player) {
+          players.push(player);
+        }
+      });
+      io.to(gameroomId).emit("go to next round", roundCount, players, gameroomId);
+    }
+  });
 });
 
 app.post("/gameroom", (req, res) => {
@@ -230,6 +246,8 @@ app.post("/gameroom", (req, res) => {
     id: newRoomId,
     maxPlayerCount,
     host: req.body.socketId,
+    winners: Array(5).fill(false, 0),
+    roundCount: 0,
   };
   io.emit("gameroom created", newRoomId, maxPlayerCount);
   res.json({ id: newRoomId, maxPlayerCount });
