@@ -27,6 +27,7 @@ interface Player extends User {
   } | null;
   color: string;
   score: number;
+  gainedPower: boolean;
   gameroom: string; // reference to Gameroom
 }
 
@@ -118,7 +119,14 @@ io.on("connection", async (socket) => {
       const assignedColors = new Set();
       clientsInRoom?.forEach((clientId) => assignedColors.add(allPlayers.get(clientId)!.color));
       const color = Object.values(PACMAN_COLORS).find((color) => !assignedColors.has(color)) ?? "";
-      allPlayers.set(socket.id, { ...currentUser, position: null, color, gameroom: gameroomId, score: 0 });
+      allPlayers.set(socket.id, {
+        ...currentUser,
+        position: null,
+        color,
+        gameroom: gameroomId,
+        score: 0,
+        gainedPower: false,
+      });
     }
 
     socket.join(`${gameroomId}`);
@@ -198,7 +206,7 @@ io.on("connection", async (socket) => {
 
   socket.on("player defeat", (gameroomId: string, winnerId: string, defeatedId: string) => {
     if (socket.id === winnerId) {
-      console.log("player", winnerId, "defated", defeatedId, "in gameroom", gameroomId);
+      console.log("player", winnerId, "defeated", defeatedId, "in gameroom", gameroomId);
       io.to(gameroomId).emit("player defeated", winnerId, defeatedId);
     }
   });
@@ -216,6 +224,21 @@ io.on("connection", async (socket) => {
 
   socket.on("reset fruit", (gameroomId: string) => {
     gamerooms[gameroomId].fruitPlaced = false;
+  });
+
+  socket.on("got cherry", (socketId: string, gameroomId: string) => {
+    if (socket.id !== socketId) return;
+
+    const player = allPlayers.get(socketId);
+    if (player) {
+      player.gainedPower = true;
+      io.to(gameroomId).emit("player power up", player.id);
+
+      setTimeout(() => {
+        player.gainedPower = false;
+        io.to(gameroomId).emit("player return to normal", player.id);
+      }, 2000);
+    }
   });
 
   socket.on("win round", (winnerId: string, gameroomId: string) => {
