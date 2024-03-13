@@ -11,7 +11,7 @@ interface Gameroom {
   maxPlayerCount: number;
   host: string;
   fruitPlaced?: boolean;
-  winners: boolean[];
+  // winners: boolean[];
   roundCount: number;
 }
 
@@ -244,7 +244,7 @@ io.on("connection", async (socket) => {
 
   socket.on("win round", (winnerId: string, gameroomId: string) => {
     if (socket.id === winnerId) {
-      gamerooms[gameroomId].winners.push(true);
+      // gamerooms[gameroomId].winners.push(true);
       const player = allPlayers.get(winnerId);
       player && player.score++;
     }
@@ -281,7 +281,7 @@ app.post("/gameroom", (req, res) => {
     id: newRoomId,
     maxPlayerCount,
     host: req.body.socketId,
-    winners: Array(5).fill(false, 0),
+    // winners: Array(MAX_ROUNDS).fill(false, 0),
     roundCount: 0,
   };
   io.emit("gameroom created", newRoomId, maxPlayerCount);
