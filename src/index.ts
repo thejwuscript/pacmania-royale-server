@@ -197,8 +197,10 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("player defeat", (gameroomId: string, winnerId: string, defeatedId: string) => {
-    console.log("player", winnerId, "defated", defeatedId, "in gameroom", gameroomId);
-    io.to(gameroomId).emit("player defeated", winnerId, defeatedId);
+    if (socket.id === winnerId) {
+      console.log("player", winnerId, "defated", defeatedId, "in gameroom", gameroomId);
+      io.to(gameroomId).emit("player defeated", winnerId, defeatedId);
+    }
   });
 
   socket.on("fruit timer", (duration: number, gameroomId: string) => {
@@ -217,7 +219,11 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("win round", (winnerId: string, gameroomId: string) => {
-    // code here
+    if (socket.id === winnerId) {
+      gamerooms[gameroomId].winners.push(true);
+      const player = allPlayers.get(winnerId);
+      player && player.score++;
+    }
   });
 
   socket.on("update round count", (gameroomId: string) => {
