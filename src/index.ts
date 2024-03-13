@@ -25,6 +25,7 @@ interface Player extends User {
   } | null;
   color: string;
   gameroom: string;
+  score: number;
 }
 
 dotenv.config();
@@ -115,7 +116,7 @@ io.on("connection", async (socket) => {
       const assignedColors = new Set();
       clientsInRoom?.forEach((clientId) => assignedColors.add(allPlayers.get(clientId)!.color));
       const color = Object.values(PACMAN_COLORS).find((color) => !assignedColors.has(color)) ?? "";
-      allPlayers.set(socket.id, { ...currentUser, position: null, color, gameroom: gameroomId });
+      allPlayers.set(socket.id, { ...currentUser, position: null, color, gameroom: gameroomId, score: 0 });
     }
 
     socket.join(`${gameroomId}`);
@@ -211,6 +212,10 @@ io.on("connection", async (socket) => {
 
   socket.on("reset fruit", (gameroomId: string) => {
     gamerooms[gameroomId].fruitPlaced = false;
+  })
+
+  socket.on("win round", (winnerId: string, gameroomId: string) => {
+    // code here
   })
 });
 
