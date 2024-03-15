@@ -152,10 +152,11 @@ io.on("connection", async (socket) => {
 
     if (gamerooms[gameroomId].host === socket.id) {
       io.to(gameroomId).emit("host left");
+      io.emit("gameroom deleted", gameroomId);
+      const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
+      clientsInRoom?.forEach((clientId) => allPlayers.delete(clientId));
       io.socketsLeave(gameroomId);
       delete gamerooms[gameroomId];
-      allPlayers.delete(socket.id);
-      io.emit("gameroom deleted", gameroomId);
       return;
     } else {
       // TODO: Refactor
@@ -216,10 +217,12 @@ io.on("connection", async (socket) => {
     const x = getRandomNumber(50, 550);
     const y = getRandomNumber(50, 350);
     setTimeout(() => {
-      if (gamerooms[gameroomId].fruitPlaced) return;
+      if (gamerooms[gameroomId]?.fruitPlaced) return;
 
       io.to(gameroomId).emit("fruit location", x, y);
-      gamerooms[gameroomId].fruitPlaced = true;
+      if (gamerooms[gameroomId]) {
+        gamerooms[gameroomId].fruitPlaced = true;
+      }
     }, duration);
   });
 
