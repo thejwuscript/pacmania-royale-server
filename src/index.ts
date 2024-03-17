@@ -7,11 +7,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import { gamerooms } from "./models/Gameroom";
 import routes from "./routes";
-
-interface User {
-  id: string;
-  name: string;
-}
+import { users, User } from "./models/User";
 
 interface Player extends User {
   position: {
@@ -44,7 +40,7 @@ export const io = new Server(server, {
 });
 
 const MAX_ROUNDS = 3;
-let connectedUsers = new Map<string, User>();
+
 let allPlayers = new Map<string, Player>();
 const PACMAN_COLORS = {
   DEFAULT: "0xffff00",
@@ -58,13 +54,13 @@ io.on("connection", async (socket) => {
     length: 2,
   });
 
-  connectedUsers.set(socket.id, { id: socket.id, name: username });
+  users.set(socket.id, { id: socket.id, name: username });
 
   console.log(`User ${username} has connected.`);
 
   socket.emit("current user data", { id: socket.id, name: username });
   io.emit("connected", { name: username });
-  io.emit("update user list", Array.from(connectedUsers.values()));
+  io.emit("update user list", Array.from(users.values()));
 
   socket.on("new chat message", (message, username) => {
     io.emit("chat messages", message, username);
@@ -72,12 +68,12 @@ io.on("connection", async (socket) => {
 
   socket.on("disconnect", async () => {
     try {
-      const disconnectedUser = connectedUsers.get(socket.id);
+      const disconnectedUser = users.get(socket.id);
       if (disconnectedUser) {
         console.log(`User ${disconnectedUser.name} has disconnected.`);
-        connectedUsers.delete(socket.id);
+        users.delete(socket.id);
         io.emit("disconnected", { name: disconnectedUser.name });
-        io.emit("update user list", Array.from(connectedUsers.values()));
+        io.emit("update user list", Array.from(users.values()));
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -90,7 +86,7 @@ io.on("connection", async (socket) => {
 
   socket.on("join lobby", () => {
     socket.emit("current user data", { id: socket.id, name: username });
-    io.emit("update user list", Array.from(connectedUsers.values()));
+    io.emit("update user list", Array.from(users.values()));
   });
 
   socket.on("join gameroom", (gameroomId: string, callback) => {
@@ -106,7 +102,7 @@ io.on("connection", async (socket) => {
       callback({ message: "The game room is full." });
       return;
     }
-    const currentUser = connectedUsers.get(socket.id);
+    const currentUser = users.get(socket.id);
 
     if (currentUser && !allPlayers.get(socket.id)) {
       const assignedColors = new Set();
@@ -154,7 +150,7 @@ io.on("connection", async (socket) => {
       socket.leave(`${gameroomId}`);
       allPlayers.delete(socket.id);
       const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
-      io.to(gameroomId).emit("player left", connectedUsers.get(socket.id)?.name);
+      io.to(gameroomId).emit("player left", users.get(socket.id)?.name);
       const count = clientsInRoom?.size ?? 0;
       if (count === 0) {
         delete gamerooms[gameroomId];
