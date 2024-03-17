@@ -159,13 +159,17 @@ io.on("connection", async (socket) => {
       delete gamerooms[gameroomId];
       return;
     } else {
-      // TODO: Refactor
       socket.leave(`${gameroomId}`);
       allPlayers.delete(socket.id);
       const clientsInRoom = io.sockets.adapter.rooms.get(gameroomId);
       io.to(gameroomId).emit("player left", connectedUsers.get(socket.id)?.name);
       const count = clientsInRoom?.size ?? 0;
-      io.emit("gameroom player count", gameroomId, count);
+      if (count === 0) {
+        delete gamerooms[gameroomId];
+        io.emit("gameroom deleted", gameroomId);
+      } else {
+        io.emit("gameroom player count", gameroomId, count);
+      }
     }
   });
 
@@ -253,16 +257,20 @@ io.on("connection", async (socket) => {
     }
   });
 
-  socket.on("update round count", (gameroomId: string) => {
+  socket.on("update round count", (gameroomId: string, nextRoundCount: number) => {
     if (gamerooms[gameroomId].host === socket.id) {
       const roundCount = ++gamerooms[gameroomId].roundCount;
       const players: Player[] = [];
-      io.sockets.adapter.rooms.get(gameroomId)?.forEach((clientId) => {
-        const player = allPlayers.get(clientId);
-        if (player) {
-          players.push(player);
-        }
-      });
+      const clientIds = io.sockets.adapter.rooms.get(gameroomId);
+      if (clientIds?.size === 2) {
+        clientIds.forEach((clientId) => {
+          const player = allPlayers.get(clientId);
+          if (player) {
+            players.push(player);
+          }
+        });
+      }
+      console.log(socket.id, allPlayers.get(socket.id)!.name, clientIds);
       if ((roundCount > 2 && hasPlayerWithScoreGreaterThan1(players)) || roundCount > MAX_ROUNDS) {
         const winnerId = getPlayerIdWithHighestScore(players);
         io.to(gameroomId).emit("game over", winnerId);
