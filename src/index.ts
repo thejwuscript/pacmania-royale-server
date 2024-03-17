@@ -8,17 +8,7 @@ import bodyParser from "body-parser";
 import { gamerooms } from "./models/Gameroom";
 import routes from "./routes";
 import { users, User } from "./models/User";
-
-interface Player extends User {
-  position: {
-    x: number;
-    y: number;
-  } | null;
-  color: string;
-  score: number;
-  gainedPower: boolean;
-  gameroom: string; // reference to Gameroom
-}
+import { Player, players as allPlayers } from "./models/Player";
 
 dotenv.config();
 
@@ -41,7 +31,6 @@ export const io = new Server(server, {
 
 const MAX_ROUNDS = 3;
 
-let allPlayers = new Map<string, Player>();
 const PACMAN_COLORS = {
   DEFAULT: "0xffff00",
   TEAL: "0x15f5ba",
