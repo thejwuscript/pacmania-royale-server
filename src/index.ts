@@ -5,15 +5,8 @@ import { uniqueNamesGenerator, adjectives, animals } from "unique-names-generato
 import { v4 as uuidv4 } from "uuid";
 import cors from "cors";
 import bodyParser from "body-parser";
-
-interface Gameroom {
-  id: string;
-  maxPlayerCount: number;
-  host: string;
-  fruitPlaced?: boolean;
-  // winners: boolean[];
-  roundCount: number;
-}
+import { gamerooms } from "./models/Gameroom";
+import routes from "./routes";
 
 interface User {
   id: string;
@@ -37,12 +30,13 @@ const app = express();
 const port = 3001;
 app.use(cors());
 app.use(bodyParser.json());
+app.use("/", routes);
 
 const server = app.listen(port, () => {
   console.log("listening on port:" + port);
 });
 
-const io = new Server(server, {
+export const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
@@ -51,8 +45,6 @@ const io = new Server(server, {
 
 const MAX_ROUNDS = 3;
 let connectedUsers = new Map<string, User>();
-let nextGameroomId = 1;
-let gamerooms: { [key: string]: Gameroom } = {};
 let allPlayers = new Map<string, Player>();
 const PACMAN_COLORS = {
   DEFAULT: "0xffff00",
@@ -279,35 +271,6 @@ io.on("connection", async (socket) => {
       }
     }
   });
-});
-
-app.post("/gameroom", (req, res) => {
-  const newRoomId = nextGameroomId.toString();
-  nextGameroomId += 1;
-  let maxPlayerCount = 1;
-  if (req.body.maxPlayerCount) {
-    maxPlayerCount = req.body.maxPlayerCount;
-  }
-  gamerooms[newRoomId] = {
-    id: newRoomId,
-    maxPlayerCount,
-    host: req.body.socketId,
-    // winners: Array(MAX_ROUNDS).fill(false, 0),
-    roundCount: 0,
-  };
-  io.emit("gameroom created", newRoomId, maxPlayerCount);
-  res.json({ id: newRoomId, maxPlayerCount });
-});
-
-app.get("/gamerooms", (req, res) => {
-  const gameroomAry = Object.values(gamerooms).map((gameroom) => {
-    return {
-      id: gameroom.id,
-      maxPlayerCount: gameroom.maxPlayerCount,
-      currentPlayerCount: io.sockets.adapter.rooms.get(gameroom.id)?.size ?? 0,
-    };
-  });
-  res.json(gameroomAry);
 });
 
 function getRandomNumber(min: number, max: number) {
