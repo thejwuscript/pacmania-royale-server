@@ -1,4 +1,4 @@
-import { Server, Socket } from "socket.io";
+import type { Server, Socket } from "socket.io";
 import { gamerooms } from "../models/Gameroom";
 import { users } from "../models/User";
 import { players as allPlayers, Player } from "../models/Player";
