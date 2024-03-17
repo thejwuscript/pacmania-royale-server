@@ -9,7 +9,7 @@ import { gamerooms } from "./models/Gameroom";
 import routes from "./routes";
 import { users, User } from "./models/User";
 import { Player, players as allPlayers } from "./models/Player";
-import registerGameroomHandler from "./socketHandlers/GameroomHandler";
+import registerGameroomHandler from "./socketHandlers/gameroomHandler";
 
 dotenv.config();
 
